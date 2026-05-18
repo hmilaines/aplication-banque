@@ -1,0 +1,13 @@
+{
+  "name": "bank-microservices",
+  "version": "1.0.0",
+  "description": "Application Bancaire Simplifiée – Architecture Microservices",
+  "scripts": {
+    "install:all": "cd microservice-compte && npm install && cd ../microservice-transaction && npm install && cd ../microservice-notification && npm install && cd ../api-gateway && npm install",
+    "start:compte": "cd microservice-compte && node server.js",
+    "start:transaction": "cd microservice-transaction && node server.js",
+    "start:notification": "cd microservice-notification && node server.js",
+    "start:gateway": "cd api-gateway && node server.js",
+    "test:client": "cd client && node client.js"
+  }
+}
