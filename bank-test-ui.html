@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏦 Bank Microservices – Console de test</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1e40af;
+      --success: #10b981;
+      --danger:  #ef4444;
+      --warning: #f59e0b;
+      --bg:      #0f172a;
+      --bg-card: #1e293b;
+      --bg-input:#0b1220;
+      --text:    #e2e8f0;
+      --text-muted:#94a3b8;
+      --border:  #334155;
+      --radius:  10px;
+      --shadow:  0 4px 20px rgba(0,0,0,.4);
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding: 24px;
+      background: rgba(30, 41, 59, 0.6);
+      border-radius: var(--radius);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+    }
+    header h1 { font-size: 2rem; margin-bottom: 8px; }
+    header p  { color: var(--text-muted); font-size: 0.95rem; }
+    .api-config {
+      display: flex; gap: 8px; justify-content: center; margin-top: 16px;
+      flex-wrap: wrap; align-items: center;
+    }
+    .api-config input {
+      padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg-input); color: var(--text); width: 280px;
+    }
+    .status-dot {
+      display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+      background: #64748b; margin-right: 6px; transition: all .3s;
+    }
+    .status-dot.online  { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .status-dot.offline { background: var(--danger);  box-shadow: 0 0 8px var(--danger); }
+    .tabs {
+      display: flex; gap: 6px; margin-bottom: 20px;
+      background: var(--bg-card); padding: 6px; border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .tab-btn {
+      flex: 1; min-width: 140px; padding: 12px 16px; cursor: pointer;
+      background: transparent; border: none; color: var(--text-muted);
+      font-size: 0.95rem; font-weight: 500; border-radius: 6px;
+      transition: all .2s;
+    }
+    .tab-btn:hover { background: rgba(37, 99, 235, 0.1); color: var(--text); }
+    .tab-btn.active {
+      background: var(--primary); color: white;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, .4);
+    }
+    .tab-content { display: none; animation: fadeIn .3s; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(10px);} to { opacity:1; transform: translateY(0);} }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) 2fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--bg-card); padding: 24px;
+      border-radius: var(--radius); border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      font-size: 1.15rem; margin-bottom: 16px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block; margin-bottom: 6px; font-size: 0.85rem;
+      color: var(--text-muted); font-weight: 500;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 12px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--bg-input);
+      color: var(--text); font-size: 0.95rem; transition: border .2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+    }
+    textarea { resize: vertical; min-height: 60px; }
+    .btn {
+      padding: 10px 18px; border-radius: 6px; border: none;
+      font-size: 0.92rem; font-weight: 500; cursor: pointer;
+      transition: all .2s; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger  { background: var(--danger);  color: white; }
+    .btn-warning { background: var(--warning); color: white; }
+    .btn-ghost   { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-sm { padding: 6px 10px; font-size: 0.82rem; }
+    .btn-block { width: 100%; justify-content: center; }
+    .list-container { max-height: 600px; overflow-y: auto; }
+    .item {
+      padding: 14px; margin-bottom: 10px; background: var(--bg-input);
+      border-radius: 8px; border-left: 4px solid var(--primary);
+      transition: all .2s;
+    }
+    .item:hover { transform: translateX(4px); border-left-color: var(--success); }
+    .item-header {
+      display: flex; justify-content: space-between; align-items: start;
+      margin-bottom: 8px; flex-wrap: wrap; gap: 8px;
+    }
+    .item-title { font-weight: 600; color: var(--text); }
+    .item-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+    .item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    }
+    .badge-success { background: rgba(16,185,129,.2); color: var(--success); }
+    .badge-danger  { background: rgba(239,68,68,.2);  color: var(--danger); }
+    .badge-warning { background: rgba(245,158,11,.2); color: var(--warning); }
+    .badge-info    { background: rgba(37,99,235,.2);  color: #60a5fa; }
+
+    .empty {
+      text-align: center; padding: 40px; color: var(--text-muted);
+      font-style: italic;
+    }
+
+
+    .toast-container {
+      position: fixed; top: 20px; right: 20px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .toast {
+      padding: 14px 20px; border-radius: 8px; color: white;
+      min-width: 280px; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+      animation: slideIn .3s; font-size: 0.9rem;
+    }
+    .toast.success { background: var(--success); }
+    .toast.error   { background: var(--danger); }
+    .toast.info    { background: var(--primary); }
+    @keyframes slideIn { from { transform: translateX(400px);} to { transform: translateX(0);} }
+    .response-log {
+      margin-top: 16px; padding: 14px; background: #020617;
+      border-radius: 6px; border: 1px solid var(--border);
+      font-family: 'Courier New', monospace; font-size: 0.82rem;
+      max-height: 200px; overflow-y: auto; white-space: pre-wrap;
+      color: #a5f3fc;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px; margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--bg-card); padding: 18px;
+      border-radius: var(--radius); border: 1px solid var(--border);
+      text-align: center;
+    }
+    .stat-card .value { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
+    .stat-card .label { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+
+
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .row > * { flex: 1; min-width: 140px; }
+    .text-muted { color: var(--text-muted); font-size: 0.85rem; }
+    .mt-10 { margin-top: 10px; }
+    code.id-copy {
+      background: rgba(37,99,235,.15); padding: 2px 6px; border-radius: 4px;
+      cursor: pointer; font-size: 0.8rem; color: #93c5fd;
+    }
+    code.id-copy:hover { background: rgba(37,99,235,.3); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏦 Bank Microservices – Console de test</h1>
+    <p>Interface graphique pour tester l'API Gateway (REST + GraphQL) du projet bancaire</p>
+    <div class="api-config">
+      <span><span class="status-dot" id="statusDot"></span> <span id="statusText">Non connecté</span></span>
+      <input type="text" id="apiUrl" value="http://localhost:3000" placeholder="URL API Gateway" />
+      <button class="btn btn-primary btn-sm" onclick="testConnection()">🔌 Tester</button>
+    </div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="value" id="statComptes">0</div>      <div class="label">Comptes</div></div>
+    <div class="stat-card"><div class="value" id="statTransactions">0</div> <div class="label">Transactions</div></div>
+    <div class="stat-card"><div class="value" id="statNotifs">0</div>       <div class="label">Notifications</div></div>
+    <div class="stat-card"><div class="value" id="statSolde">0 DT</div>     <div class="label">Solde total</div></div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('comptes', this)">👤 Comptes</button>
+    <button class="tab-btn"        onclick="switchTab('transactions', this)">💸 Transactions</button>
+    <button class="tab-btn"        onclick="switchTab('notifications', this)">🔔 Notifications</button>
+    <button class="tab-btn"        onclick="switchTab('graphql', this)">⚡ GraphQL</button>
+  </div>
+  <div class="tab-content active" id="tab-comptes">
+    <div class="grid">
+      <div class="card">
+        <h2>➕ Créer un compte</h2>
+        <form id="formCompte" onsubmit="creerCompte(event)">
+          <div class="form-group">
+            <label>Propriétaire *</label>
+            <input type="text" id="proprietaire" required placeholder="Ali Ben Salah" />
+          </div>
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" id="email" required placeholder="ali@banque.tn" />
+          </div>
+          <div class="form-group">
+            <label>Solde initial (DT)</label>
+            <input type="number" id="soldeInitial" min="0" step="0.01" value="1000" />
+          </div>
+          <div class="form-group">
+            <label>Type de compte</label>
+            <select id="typeCompte">
+              <option value="courant">Courant</option>
+              <option value="epargne">Épargne</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Créer le compte</button>
+        </form>
+        <div class="response-log" id="logCompte" style="display:none;"></div>
+      </div>
+
+      <div class="card">
+        <h2>
+          📋 Liste des comptes
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="chargerComptes()">🔄 Rafraîchir</button>
+        </h2>
+        <div class="list-container" id="listeComptes">
+          <div class="empty">Cliquez sur "Rafraîchir" pour charger</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-transactions">
+    <div class="grid">
+      <div class="card">
+        <h2>💰 Effectuer une transaction</h2>
+        <form id="formTransaction" onsubmit="effectuerTransaction(event)">
+          <div class="form-group">
+            <label>Type *</label>
+            <select id="typeTransaction" onchange="toggleDestCompte()">
+              <option value="virement">Virement</option>
+              <option value="depot">Dépôt</option>
+              <option value="retrait">Retrait</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Compte source *</label>
+            <select id="compteSource" required>
+              <option value="">— Sélectionner —</option>
+            </select>
+          </div>
+          <div class="form-group" id="grpCompteDest">
+            <label>Compte destinataire (virement)</label>
+            <select id="compteDest">
+              <option value="">— Sélectionner —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Montant (DT) *</label>
+            <input type="number" id="montant" required min="0.01" step="0.01" placeholder="100" />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="descriptionTx" placeholder="Remboursement, salaire, etc."></textarea>
+          </div>
+          <button type="submit" class="btn btn-success btn-block">Exécuter la transaction</button>
+        </form>
+        <div class="response-log" id="logTx" style="display:none;"></div>
+      </div>
+
+      <div class="card">
+        <h2>
+          📜 Historique des transactions
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="chargerTransactions()">🔄 Rafraîchir</button>
+        </h2>
+        <div class="form-group">
+          <label>Filtrer par compte (optionnel)</label>
+          <select id="filtreCompteTx" onchange="chargerTransactions()">
+            <option value="">— Tous les comptes —</option>
+          </select>
+        </div>
+        <div class="list-container" id="listeTransactions">
+          <div class="empty">Aucune transaction</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="tab-content" id="tab-notifications">
+    <div class="card">
+      <h2>
+        🔔 Notifications (Kafka)
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="chargerNotifications()">🔄 Rafraîchir</button>
+        <button class="btn btn-primary btn-sm" onclick="toggleAutoRefresh()" id="btnAutoRefresh">▶️ Auto</button>
+      </h2>
+      <div class="form-group">
+        <label>Filtrer par compte (optionnel)</label>
+        <select id="filtreCompteNotif" onchange="chargerNotifications()">
+          <option value="">— Toutes les notifications —</option>
+        </select>
+      </div>
+      <div class="list-container" id="listeNotifications">
+        <div class="empty">Aucune notification</div>
+      </div>
+    </div>
+  </div>
+  <div class="tab-content" id="tab-graphql">
+    <div class="card">
+      <h2>⚡ Console GraphQL</h2>
+      <p class="text-muted">Endpoint : <code>POST /graphql</code></p>
+      <div class="form-group mt-10">
+        <label>Exemples rapides</label>
+        <div class="row">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="loadGqlExample('comptes')">Lister comptes</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="loadGqlExample('creer')">Créer compte</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="loadGqlExample('virement')">Virement</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="loadGqlExample('notifs')">Notifications</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Requête GraphQL</label>
+        <textarea id="gqlQuery" style="min-height:200px; font-family:'Courier New', monospace;"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="executerGraphQL()">▶️ Exécuter</button>
+      <div class="response-log" id="logGql" style="display:none; max-height:400px;"></div>
+    </div>
+  </div>
+  <div class="toast-container" id="toastContainer"></div>
+
+<script>
+
+let API_URL = 'http://localhost:3000';
+let autoRefreshInterval = null;
+
+
+document.getElementById('apiUrl').addEventListener('change', e => {
+  API_URL = e.target.value.replace(/\/$/, '');
+});
+async function apiCall(endpoint, options = {}) {
+  try {
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.erreur || data.message || `HTTP ${res.status}`);
+    return data;
+  } catch (err) {
+    throw new Error(err.message || 'Erreur réseau');
+  }
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  document.getElementById('toastContainer').appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+function showLog(elemId, data) {
+  const el = document.getElementById(elemId);
+  if (!el) return;
+  el.style.display = 'block';
+  el.textContent = JSON.stringify(data, null, 2);
+}
+
+function copyId(id) {
+  navigator.clipboard.writeText(id).then(() => showToast('ID copié !', 'info'));
+}
+
+function formatDate(iso) {
+  if (!iso) return '-';
+  try { return new Date(iso).toLocaleString('fr-FR'); }
+  catch { return iso; }
+}
+
+async function testConnection() {
+  API_URL = document.getElementById('apiUrl').value.replace(/\/$/, '');
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  try {
+    const r = await fetch(`${API_URL}/health`);
+    if (!r.ok) throw new Error('Health check failed');
+    const data = await r.json();
+    dot.className = 'status-dot online';
+    txt.textContent = `Connecté (${data.service || 'api-gateway'})`;
+    showToast('✅ API Gateway accessible', 'success');
+    refreshAll();
+  } catch (err) {
+    dot.className = 'status-dot offline';
+    txt.textContent = 'Hors ligne';
+    showToast('❌ Impossible de joindre l\'API : ' + err.message, 'error');
+  }
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  btn.classList.add('active');
+
+
+  if (name === 'comptes')       chargerComptes();
+  if (name === 'transactions')  { chargerComptes(); chargerTransactions(); }
+  if (name === 'notifications') { chargerComptes(); chargerNotifications(); }
+}
+
+
+async function creerCompte(e) {
+  e.preventDefault();
+  const body = {
+    proprietaire: document.getElementById('proprietaire').value,
+    email:        document.getElementById('email').value,
+    soldeInitial: parseFloat(document.getElementById('soldeInitial').value) || 0,
+    type:         document.getElementById('typeCompte').value
+  };
+  try {
+    const data = await apiCall('/api/comptes', { method: 'POST', body: JSON.stringify(body) });
+    showToast('✅ Compte créé : ' + (data.proprietaire || data.id), 'success');
+    showLog('logCompte', data);
+    document.getElementById('formCompte').reset();
+    chargerComptes();
+  } catch (err) {
+    showToast('❌ ' + err.message, 'error');
+    showLog('logCompte', { erreur: err.message });
+  }
+}
+
+async function chargerComptes() {
+  try {
+    const comptes = await apiCall('/api/comptes');
+    afficherComptes(comptes);
+    remplirSelectComptes(comptes);
+    document.getElementById('statComptes').textContent = comptes.length;
+    const total = comptes.reduce((s, c) => s + (parseFloat(c.solde) || 0), 0);
+    document.getElementById('statSolde').textContent = total.toFixed(2) + ' DT';
+  } catch (err) {
+    showToast('❌ Comptes : ' + err.message, 'error');
+  }
+}
+
+function afficherComptes(comptes) {
+  const c = document.getElementById('listeComptes');
+  if (!comptes || comptes.length === 0) {
+    c.innerHTML = '<div class="empty">Aucun compte enregistré</div>';
+    return;
+  }
+  c.innerHTML = comptes.map(co => `
+    <div class="item">
+      <div class="item-header">
+        <div>
+          <div class="item-title">${escapeHtml(co.proprietaire)}</div>
+          <div class="item-meta">
+            ✉️ ${escapeHtml(co.email)} •
+            <code class="id-copy" onclick="copyId('${co.id}')">${co.id.substring(0,8)}…</code>
+          </div>
+        </div>
+        <span class="badge ${co.statut === 'actif' ? 'badge-success' : 'badge-danger'}">
+          ${co.statut}
+        </span>
+      </div>
+      <div class="item-meta">
+        💳 ${co.type} • 💰 <strong style="color:var(--success); font-size:1.05rem;">${parseFloat(co.solde).toFixed(2)} DT</strong>
+        • 📅 ${formatDate(co.createdAt)}
+      </div>
+      <div class="item-actions mt-10">
+        ${co.statut === 'actif'
+          ? `<button class="btn btn-warning btn-sm" onclick="bloquerCompte('${co.id}')">🔒 Bloquer</button>`
+          : ''}
+        <button class="btn btn-ghost btn-sm" onclick="voirTransactionsCompte('${co.id}')">💸 Transactions</button>
+        <button class="btn btn-ghost btn-sm" onclick="voirNotifsCompte('${co.id}')">🔔 Notifications</button>
+        <button class="btn btn-danger btn-sm" onclick="supprimerCompte('${co.id}')">🗑️ Supprimer</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function bloquerCompte(id) {
+  if (!confirm('Bloquer ce compte ?')) return;
+  try {
+    await apiCall(`/api/comptes/${id}/bloquer`, { method: 'PATCH' });
+    showToast('🔒 Compte bloqué', 'success');
+    chargerComptes();
+  } catch (err) { showToast('❌ ' + err.message, 'error'); }
+}
+
+async function supprimerCompte(id) {
+  if (!confirm('Supprimer définitivement ce compte ?')) return;
+  try {
+    await apiCall(`/api/comptes/${id}`, { method: 'DELETE' });
+    showToast('🗑️ Compte supprimé', 'success');
+    chargerComptes();
+  } catch (err) { showToast('❌ ' + err.message, 'error'); }
+}
+
+function remplirSelectComptes(comptes) {
+  const selects = ['compteSource', 'compteDest', 'filtreCompteTx', 'filtreCompteNotif'];
+  selects.forEach(idSel => {
+    const sel = document.getElementById(idSel);
+    if (!sel) return;
+    const currentVal = sel.value;
+    const isFiltre = idSel.startsWith('filtre');
+    sel.innerHTML = isFiltre
+      ? '<option value="">— Tous les comptes —</option>'
+      : '<option value="">— Sélectionner —</option>';
+    comptes.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = `${c.proprietaire} (${parseFloat(c.solde).toFixed(2)} DT)`;
+      sel.appendChild(opt);
+    });
+    sel.value = currentVal;
+  });
+}
+
+function toggleDestCompte() {
+  const type = document.getElementById('typeTransaction').value;
+  document.getElementById('grpCompteDest').style.display = (type === 'virement') ? '' : 'none';
+}
+
+async function effectuerTransaction(e) {
+  e.preventDefault();
+  const type = document.getElementById('typeTransaction').value;
+  const body = {
+    compteSource: document.getElementById('compteSource').value,
+    compteDest:   type === 'virement' ? document.getElementById('compteDest').value : '',
+    montant:      parseFloat(document.getElementById('montant').value),
+    type:         type,
+    description:  document.getElementById('descriptionTx').value
+  };
+  if (!body.compteSource) return showToast('❌ Sélectionnez un compte source', 'error');
+  if (type === 'virement' && !body.compteDest) return showToast('❌ Sélectionnez un compte destinataire', 'error');
+
+  try {
+    const data = await apiCall('/api/transactions', { method: 'POST', body: JSON.stringify(body) });
+    const statut = data.transaction?.statut || 'inconnu';
+    if (statut === 'validee' || statut === 'validée') {
+      showToast('✅ Transaction validée', 'success');
+    } else {
+      showToast('⚠️ ' + (data.message || 'Transaction échouée'), 'error');
+    }
+    showLog('logTx', data);
+    document.getElementById('formTransaction').reset();
+    toggleDestCompte();
+    chargerComptes();
+    chargerTransactions();
+    setTimeout(chargerNotifications, 1500);
+  } catch (err) {
+    showToast('❌ ' + err.message, 'error');
+    showLog('logTx', { erreur: err.message });
+  }
+}
+
+async function chargerTransactions() {
+  try {
+    const filtreId = document.getElementById('filtreCompteTx').value;
+    const url = filtreId ? `/api/comptes/${filtreId}/transactions` : '/api/transactions';
+    const txs = await apiCall(url);
+    afficherTransactions(txs);
+    document.getElementById('statTransactions').textContent = txs.length;
+  } catch (err) {
+    showToast('❌ Transactions : ' + err.message, 'error');
+  }
+}
+
+function afficherTransactions(txs) {
+  const c = document.getElementById('listeTransactions');
+  if (!txs || txs.length === 0) {
+    c.innerHTML = '<div class="empty">Aucune transaction</div>';
+    return;
+  }
+  c.innerHTML = txs.map(t => {
+    const validee = (t.statut === 'validee' || t.statut === 'validée');
+    return `
+      <div class="item" style="border-left-color: ${validee ? 'var(--success)' : 'var(--danger)'};">
+        <div class="item-header">
+          <div>
+            <div class="item-title">${typeIcon(t.type)} ${t.type.toUpperCase()} — ${parseFloat(t.montant).toFixed(2)} DT</div>
+            <div class="item-meta">
+              <code class="id-copy" onclick="copyId('${t.id}')">${t.id.substring(0,8)}…</code>
+              • 📅 ${formatDate(t.createdAt)}
+            </div>
+          </div>
+          <span class="badge ${validee ? 'badge-success' : 'badge-danger'}">${t.statut}</span>
+        </div>
+        <div class="item-meta">
+          De : <code class="id-copy" onclick="copyId('${t.compteSource}')">${(t.compteSource||'-').substring(0,8)}…</code>
+          ${t.compteDest ? `→ Vers : <code class="id-copy" onclick="copyId('${t.compteDest}')">${t.compteDest.substring(0,8)}…</code>` : ''}
+        </div>
+        ${t.description ? `<div class="item-meta">📝 ${escapeHtml(t.description)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function typeIcon(type) {
+  return { virement: '🔄', depot: '⬇️', retrait: '⬆️' }[type] || '💸';
+}
+
+function voirTransactionsCompte(id) {
+  document.querySelector('[onclick*="transactions"]').click();
+  document.getElementById('filtreCompteTx').value = id;
+  chargerTransactions();
+}
+
+async function chargerNotifications() {
+  try {
+    const filtreId = document.getElementById('filtreCompteNotif').value;
+    const url = filtreId ? `/api/comptes/${filtreId}/notifications` : '/api/notifications';
+    const notifs = await apiCall(url);
+    afficherNotifications(notifs);
+    document.getElementById('statNotifs').textContent = notifs.length;
+  } catch (err) {
+    console.warn('Notifications :', err.message);
+  }
+}
+
+function afficherNotifications(notifs) {
+  const c = document.getElementById('listeNotifications');
+  if (!notifs || notifs.length === 0) {
+    c.innerHTML = '<div class="empty">Aucune notification</div>';
+    return;
+  }
+  notifs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  c.innerHTML = notifs.map(n => {
+    const isSuccess = n.type === 'transaction-validee' || n.type === 'succes';
+    return `
+      <div class="item" style="opacity: ${n.lue ? 0.6 : 1}; border-left-color: ${isSuccess ? 'var(--success)' : 'var(--danger)'};">
+        <div class="item-header">
+          <div>
+            <div class="item-title">${isSuccess ? '✅' : '❌'} ${escapeHtml(n.message || '')}</div>
+            <div class="item-meta">
+              📅 ${formatDate(n.createdAt)}
+              • Compte : <code class="id-copy" onclick="copyId('${n.compteId}')">${(n.compteId||'-').substring(0,8)}…</code>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
+            <span class="badge ${isSuccess ? 'badge-success' : 'badge-danger'}">${n.type}</span>
+            ${n.lue
+              ? '<span class="badge badge-info">Lue</span>'
+              : `<button class="btn btn-ghost btn-sm" onclick="marquerLue('${n.id}')">✓ Marquer lue</button>`}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function marquerLue(id) {
+  try {
+    await apiCall(`/api/notifications/${id}/lue`, { method: 'PATCH' });
+    showToast('✓ Notification marquée comme lue', 'success');
+    chargerNotifications();
+  } catch (err) { showToast('❌ ' + err.message, 'error'); }
+}
+
+function voirNotifsCompte(id) {
+  document.querySelectorAll('.tab-btn')[2].click();
+  document.getElementById('filtreCompteNotif').value = id;
+  chargerNotifications();
+}
+
+function toggleAutoRefresh() {
+  const btn = document.getElementById('btnAutoRefresh');
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+    btn.textContent = '▶️ Auto';
+    btn.className = 'btn btn-primary btn-sm';
+  } else {
+    autoRefreshInterval = setInterval(chargerNotifications, 3000);
+    btn.textContent = '⏸️ Stop';
+    btn.className = 'btn btn-danger btn-sm';
+    showToast('🔁 Rafraîchissement auto activé (3s)', 'info');
+  }
+}
+
+const GQL_EXAMPLES = {
+  comptes: `query {
+  comptes {
+    id
+    proprietaire
+    email
+    solde
+    statut
+    type
+  }
+}`,
+  creer: `mutation {
+  creerCompte(
+    proprietaire: "Test Utilisateur"
+    email: "test@banque.tn"
+    soldeInitial: 2000
+    type: "courant"
+  ) {
+    id
+    proprietaire
+    solde
+  }
+}`,
+  virement: `mutation {
+  effectuerTransaction(
+    compteSource: "ID-SOURCE-ICI"
+    compteDest:   "ID-DEST-ICI"
+    montant: 250
+    type: "virement"
+    description: "Test GraphQL"
+  ) {
+    id
+    statut
+    montant
+  }
+}`,
+  notifs: `query {
+  toutesLesNotifications {
+    id
+    compteId
+    type
+    message
+    lue
+    createdAt
+  }
+}`
+};
+
+function loadGqlExample(key) {
+  document.getElementById('gqlQuery').value = GQL_EXAMPLES[key] || '';
+}
+
+async function executerGraphQL() {
+  const query = document.getElementById('gqlQuery').value;
+  if (!query.trim()) return showToast('❌ Saisissez une requête', 'error');
+  try {
+    const res = await fetch(`${API_URL}/graphql`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query })
+    });
+    const data = await res.json();
+    showLog('logGql', data);
+    if (data.errors) {
+      showToast('❌ Erreur GraphQL', 'error');
+    } else {
+      showToast('✅ Requête exécutée', 'success');
+      refreshAll();
+    }
+  } catch (err) {
+    showToast('❌ ' + err.message, 'error');
+    showLog('logGql', { erreur: err.message });
+  }
+}
+
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, m =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m])
+  );
+}
+
+function refreshAll() {
+  chargerComptes();
+  chargerTransactions();
+  chargerNotifications();
+}
+
+window.addEventListener('load', () => {
+  loadGqlExample('comptes');
+  toggleDestCompte();
+  testConnection();
+});
+</script>
+</body>
+</html>
