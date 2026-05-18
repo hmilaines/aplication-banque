@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package transaction;
+
+message Transaction {
+  string id           = 1;
+  string compteSource = 2;
+  string compteDest   = 3;
+  double montant      = 4;
+  string type         = 5;   
+  string statut       = 6;  
+  string description  = 7;
+  string createdAt    = 8;
+}
+
+
+message CreateTransactionRequest {
+  string compteSource = 1;
+  string compteDest   = 2;
+  double montant      = 3;
+  string type         = 4;
+  string description  = 5;
+}
+message CreateTransactionResponse {
+  Transaction transaction = 1;
+  string      message     = 2;
+}
+
+
+message GetTransactionRequest {
+  string id = 1;
+}
+message GetTransactionResponse {
+  Transaction transaction = 1;
+}
+
+
+message GetTransactionsByCompteRequest {
+  string compte_id = 1;
+}
+message GetTransactionsByCompteResponse {
+  repeated Transaction transactions = 1;
+}
+
+
+message GetAllTransactionsRequest {}
+message GetAllTransactionsResponse {
+  repeated Transaction transactions = 1;
+}
+
+
+service TransactionService {
+  rpc CreateTransaction          (CreateTransactionRequest)          returns (CreateTransactionResponse);
+  rpc GetTransaction             (GetTransactionRequest)             returns (GetTransactionResponse);
+  rpc GetTransactionsByCompte    (GetTransactionsByCompteRequest)    returns (GetTransactionsByCompteResponse);
+  rpc GetAllTransactions         (GetAllTransactionsRequest)         returns (GetAllTransactionsResponse);
+}

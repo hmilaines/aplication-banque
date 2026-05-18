@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package compte;
+
+message Compte {
+  string id          = 1;
+  string proprietaire = 2;
+  string email       = 3;
+  double solde       = 4;
+  string type        = 5;   
+  string statut      = 6;   
+  string createdAt   = 7;
+}
+
+message CreateCompteRequest {
+  string proprietaire = 1;
+  string email        = 2;
+  double solde_initial = 3;
+  string type         = 4;
+}
+message CreateCompteResponse {
+  Compte compte = 1;
+}
+
+message GetCompteRequest {
+  string id = 1;
+}
+message GetCompteResponse {
+  Compte compte = 1;
+}
+
+message GetAllComptesRequest {}
+message GetAllComptesResponse {
+  repeated Compte comptes = 1;
+}
+
+message UpdateSoldeRequest {
+  string id     = 1;
+  double montant = 2;   
+}
+message UpdateSoldeResponse {
+  Compte compte = 1;
+  string message = 2;
+}
+
+message DeleteCompteRequest {
+  string id = 1;
+}
+message DeleteCompteResponse {
+  bool   success = 1;
+  string message = 2;
+}
+
+message BloquerCompteRequest {
+  string id = 1;
+}
+message BloquerCompteResponse {
+  Compte compte  = 1;
+  string message = 2;
+}
+
+service CompteService {
+  rpc CreateCompte   (CreateCompteRequest)   returns (CreateCompteResponse);
+  rpc GetCompte      (GetCompteRequest)      returns (GetCompteResponse);
+  rpc GetAllComptes  (GetAllComptesRequest)  returns (GetAllComptesResponse);
+  rpc UpdateSolde    (UpdateSoldeRequest)    returns (UpdateSoldeResponse);
+  rpc DeleteCompte   (DeleteCompteRequest)   returns (DeleteCompteResponse);
+  rpc BloquerCompte  (BloquerCompteRequest)  returns (BloquerCompteResponse);
+}

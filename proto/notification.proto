@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package notification;
+
+message Notification {
+  string id        = 1;
+  string compteId  = 2;
+  string email     = 3;
+  string type      = 4;    
+  string message   = 5;
+  bool   lue       = 6;
+  string createdAt = 7;
+}
+
+message GetNotificationsByCompteRequest {
+  string compte_id = 1;
+}
+message GetNotificationsByCompteResponse {
+  repeated Notification notifications = 1;
+}
+
+message GetAllNotificationsRequest {}
+message GetAllNotificationsResponse {
+  repeated Notification notifications = 1;
+}
+
+message MarquerLueRequest {
+  string id = 1;
+}
+message MarquerLueResponse {
+  Notification notification = 1;
+  string       message      = 2;
+}
+
+service NotificationService {
+  rpc GetNotificationsByCompte (GetNotificationsByCompteRequest) returns (GetNotificationsByCompteResponse);
+  rpc GetAllNotifications      (GetAllNotificationsRequest)      returns (GetAllNotificationsResponse);
+  rpc MarquerLue               (MarquerLueRequest)               returns (MarquerLueResponse);
+}
